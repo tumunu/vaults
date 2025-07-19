@@ -1,0 +1,869 @@
+openapi: 3.0.3
+info:
+  title: CopilotVault API
+  description: |
+    Comprehensive Microsoft 365 Copilot governance and auditing platform API.
+    
+    This API provides enterprise administrators with tools to audit employee Microsoft 365 Copilot usage,
+    manage compliance policies, monitor security alerts, and handle seat-based billing through Stripe integration.
+    
+    ## Authentication Levels
+    
+    ### Backend-Only Endpoints (Internal Billing)
+    - Secured with Azure AD scope: `CopilotVault.ReadBilling`
+    - Used by backend services only
+    - Include tenant validation and seat management
+    
+    ### Frontend-Facing Endpoints (Stripe Checkout)
+    - Standard authentication suitable for frontend consumption
+    - Proxy to Stripe's official APIs with secure key injection
+    - Used by React Web and Flutter Mobile applications
+    
+    ## Architecture Separation
+    
+    - **Internal Billing**: `/api/v1/stripe/seats/*`, `/api/v1/stripe/billing/*`
+    - **Stripe Checkout**: `/api/v1/stripe/payment-links/*`, `/api/v1/stripe/checkout`
+    - **Microsoft Graph**: `/api/copilot/*` (requires proper Graph permissions)
+    - **Health & Monitoring**: `/api/health/*`, `/api/admin/servicebus/*`
+  version: 1.0.0
+  contact:
+    name: CopilotVault Support
+    url: https://copilotvault.com/support
+    email: support@copilotvault.com
+  license:
+    name: Commercial License
+    url: https://copilotvault.com/license
+
+servers:
+  - url: https://func-copilotvault-nz.azurewebsites.net/api
+    description: Production server
+  - url: http://localhost:7071/api
+    description: Local development server
+
+security:
+  - FunctionKey: []
+  - BearerAuth: []
+  - BackendBilling: []
+
+tags:
+  - name: Internal Billing
+    description: |
+      Backend-only seat management endpoints secured with CopilotVault.ReadBilling scope.
+      These endpoints should NEVER be called directly from frontend applications.
+  - name: Stripe Checkout
+    description: |
+      Frontend-facing payment and checkout endpoints that proxy to Stripe's official APIs.
+      Safe for consumption by React Web and Flutter Mobile applications.
+  - name: Microsoft Graph
+    description: |
+      Official Microsoft Graph API integration for Copilot data, requiring proper Azure AD permissions.
+  - name: Health & Monitoring
+    description: |
+      System health, diagnostics, and Service Bus monitoring endpoints.
+  - name: Admin Functions
+    description: |
+      Administrative functions for tenant management, user listing, and policy configuration.
+  - name: Search & Conversations
+    description: |
+      Conversation search, retrieval, and content management functionality.
+
+components:
+  securitySchemes:
+    FunctionKey:
+      type: apiKey
+      in: header
+      name: x-functions-key
+      description: Azure Function App authentication key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Azure AD Bearer token
+    BackendBilling:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://login.microsoftonline.com/organizations/oauth2/v2.0/token
+          scopes:
+            CopilotVault.ReadBilling: Access to internal seat management and billing data
+      description: Backend-only Azure AD scope for billing operations
+
+  schemas:
+    # Billing & Seat Management Schemas
+    SeatStatus:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          example: "tenant-123"
+        purchasedSeats:
+          type: integer
+          example: 50
+        activeSeats:
+          type: integer
+          example: 42
+        maxSeats:
+          type: integer
+          example: 50
+        isEnterprise:
+          type: boolean
+          example: false
+        lastSeatUpdate:
+          type: string
+          format: date-time
+          example: "2025-06-26T14:30:00Z"
+        canAddUsers:
+          type: boolean
+          example: true
+
+    SeatReservationRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          example: "user-456"
+        userEmail:
+          type: string
+          format: email
+          example: "user@company.com"
+
+    SeatReservationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Seat reserved successfully"
+        tenantId:
+          type: string
+          example: "tenant-123"
+        userId:
+          type: string
+          example: "user-456"
+        userEmail:
+          type: string
+          example: "user@company.com"
+        activeSeats:
+          type: integer
+          example: 43
+        maxSeats:
+          type: integer
+          example: 50
+        reservedAt:
+          type: string
+          format: date-time
+          example: "2025-06-26T14:30:00Z"
+
+    SeatReleaseRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          example: "user-456"
+        reason:
+          type: string
+          example: "User removed from organization"
+
+    PaymentLinkRequest:
+      type: object
+      required:
+        - tenantId
+        - seats
+        - successUrl
+        - cancelUrl
+      properties:
+        tenantId:
+          type: string
+          example: "tenant-123"
+        seats:
+          type: integer
+          minimum: 1
+          example: 5
+        successUrl:
+          type: string
+          format: uri
+          example: "https://app.copilotvault.com/success"
+        cancelUrl:
+          type: string
+          format: uri
+          example: "https://app.copilotvault.com/cancel"
+
+    PaymentLinkResponse:
+      type: object
+      properties:
+        paymentLinkId:
+          type: string
+          example: "plink_123456"
+        url:
+          type: string
+          format: uri
+          example: "https://buy.stripe.com/test_123456"
+        seats:
+          type: integer
+          example: 5
+        tenantId:
+          type: string
+          example: "tenant-123"
+
+    PaymentLink:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "plink_123456"
+        url:
+          type: string
+          format: uri
+          example: "https://buy.stripe.com/test_123456"
+        active:
+          type: boolean
+          example: true
+        metadata:
+          type: object
+          properties:
+            tenantId:
+              type: string
+            seats:
+              type: string
+        lineItems:
+          type: array
+          items:
+            type: object
+            properties:
+              price:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  unit_amount:
+                    type: integer
+                  currency:
+                    type: string
+                  recurring:
+                    type: object
+              quantity:
+                type: integer
+
+    BillingStatus:
+      type: object
+      properties:
+        customerEmail:
+          type: string
+          format: email
+          example: "admin@company.com"
+        subscriptionStatus:
+          type: string
+          enum: [active, past_due, canceled, unpaid]
+          example: "active"
+        currentPeriodEnd:
+          type: string
+          format: date-time
+          example: "2025-07-26T14:30:00Z"
+        invoices:
+          type: array
+          items:
+            type: object
+            properties:
+              Id:
+                type: string
+              AmountDue:
+                type: integer
+              Status:
+                type: string
+              InvoicePdf:
+                type: string
+                format: uri
+              Created:
+                type: string
+                format: date-time
+
+    # Health & Monitoring Schemas
+    HealthStatus:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        overall:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [healthy, unhealthy]
+            available:
+              type: boolean
+            monitoringEnabled:
+              type: boolean
+
+    ServiceBusHealth:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        overall:
+          $ref: '#/components/schemas/HealthStatus/properties/overall'
+        queues:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              name:
+                type: string
+              status:
+                type: string
+                enum: [healthy, unhealthy]
+              available:
+                type: boolean
+              metrics:
+                type: object
+                properties:
+                  activeMessages:
+                    type: integer
+                  deadLetterMessages:
+                    type: integer
+                  totalMessages:
+                    type: integer
+                  sizeInBytes:
+                    type: integer
+
+    # Microsoft Graph Schemas
+    CopilotUsageSummary:
+      type: object
+      properties:
+        reportPeriod:
+          type: string
+          example: "D7"
+        reportRefreshDate:
+          type: string
+          format: date-time
+        userDetails:
+          type: array
+          items:
+            type: object
+            properties:
+              userPrincipalName:
+                type: string
+              lastActivityDate:
+                type: string
+                format: date
+              copilotLastActivityDate:
+                type: string
+                format: date
+
+    TenantUser:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+          format: email
+        userType:
+          type: string
+          enum: [Member, Guest]
+        accountEnabled:
+          type: boolean
+        createdDateTime:
+          type: string
+          format: date-time
+        lastSignIn:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+        details:
+          type: string
+          description: Additional details when available
+
+paths:
+  # Internal Billing Endpoints (Backend-Only)
+  /v1/stripe/seats/{tenantId}:
+    get:
+      tags:
+        - Internal Billing
+      summary: Get seat status for tenant
+      description: |
+        **Backend-only endpoint** - Retrieves current seat allocation and usage for a tenant.
+        Requires CopilotVault.ReadBilling scope. Should NOT be called from frontend applications.
+      operationId: getSeatStatus
+      security:
+        - BackendBilling: [CopilotVault.ReadBilling]
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tenant-123"
+      responses:
+        '200':
+          description: Seat status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeatStatus'
+        '400':
+          description: Invalid tenant ID
+        '401':
+          description: Unauthorized - missing or invalid CopilotVault.ReadBilling scope
+        '404':
+          description: Tenant not found
+
+  /v1/stripe/seats/{tenantId}/reserve:
+    post:
+      tags:
+        - Internal Billing
+      summary: Reserve a seat for a user
+      description: |
+        **Backend-only endpoint** - Reserves a seat for a specific user, incrementing active seat count.
+        Includes overflow protection for non-enterprise customers. Requires CopilotVault.ReadBilling scope.
+      operationId: reserveSeat
+      security:
+        - BackendBilling: [CopilotVault.ReadBilling]
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tenant-123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeatReservationRequest'
+      responses:
+        '200':
+          description: Seat reserved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeatReservationResponse'
+        '400':
+          description: Invalid request data
+        '401':
+          description: Unauthorized - missing or invalid CopilotVault.ReadBilling scope
+        '404':
+          description: Tenant not found
+        '409':
+          description: Seat limit reached - cannot reserve additional seats
+
+  /v1/stripe/seats/{tenantId}/release:
+    post:
+      tags:
+        - Internal Billing
+      summary: Release a seat for a user
+      description: |
+        **Backend-only endpoint** - Releases a seat for a specific user, decrementing active seat count.
+        Requires CopilotVault.ReadBilling scope.
+      operationId: releaseSeat
+      security:
+        - BackendBilling: [CopilotVault.ReadBilling]
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tenant-123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeatReleaseRequest'
+      responses:
+        '200':
+          description: Seat released successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeatReservationResponse'
+        '400':
+          description: Invalid request data or no seats to release
+        '401':
+          description: Unauthorized - missing or invalid CopilotVault.ReadBilling scope
+        '404':
+          description: Tenant not found
+
+  /v1/stripe/billing/{tenantId}:
+    get:
+      tags:
+        - Internal Billing
+      summary: Get billing status and invoice history
+      description: |
+        **Backend-only endpoint** - Retrieves billing information, subscription status, and invoice history.
+        Requires CopilotVault.ReadBilling scope.
+      operationId: getBillingStatus
+      security:
+        - BackendBilling: [CopilotVault.ReadBilling]
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "tenant-123"
+      responses:
+        '200':
+          description: Billing status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingStatus'
+        '400':
+          description: Invalid tenant ID
+        '401':
+          description: Unauthorized - missing or invalid CopilotVault.ReadBilling scope
+        '404':
+          description: Tenant not found or no Stripe customer associated
+
+  # Frontend-Facing Stripe Checkout Endpoints
+  /v1/stripe/payment-links:
+    post:
+      tags:
+        - Stripe Checkout
+      summary: Create payment link for seat-based billing
+      description: |
+        **Frontend-facing endpoint** - Creates a dynamic payment link for seat-based billing.
+        Safe for frontend consumption. Proxies to Stripe's official Payment Links API.
+      operationId: createPaymentLink
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentLinkRequest'
+      responses:
+        '200':
+          description: Payment link created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentLinkResponse'
+        '400':
+          description: Invalid request data
+        '500':
+          description: Stripe API error
+
+    get:
+      tags:
+        - Stripe Checkout
+      summary: List payment links
+      description: |
+        **Frontend-facing endpoint** - Lists active payment links. Proxies to Stripe's Payment Links API.
+      operationId: listPaymentLinks
+      responses:
+        '200':
+          description: Payment links retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: "list"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PaymentLink'
+                  has_more:
+                    type: boolean
+
+  /v1/stripe/payment-links/{id}:
+    get:
+      tags:
+        - Stripe Checkout
+      summary: Get payment link details
+      description: |
+        **Frontend-facing endpoint** - Retrieves details for a specific payment link.
+        Proxies to Stripe's Payment Links API.
+      operationId: getPaymentLink
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "plink_123456"
+      responses:
+        '200':
+          description: Payment link details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentLink'
+        '404':
+          description: Payment link not found
+
+  /v1/stripe/payment-links/{id}/line-items:
+    get:
+      tags:
+        - Stripe Checkout
+      summary: Get payment link line items
+      description: |
+        **Frontend-facing endpoint** - Retrieves line items for a payment link.
+        Proxies to Stripe's Payment Links API.
+      operationId: getPaymentLinkLineItems
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "plink_123456"
+      responses:
+        '200':
+          description: Line items retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: "list"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  has_more:
+                    type: boolean
+
+  /v1/stripe/checkout:
+    post:
+      tags:
+        - Stripe Checkout
+      summary: Create checkout session (legacy)
+      description: |
+        **Frontend-facing endpoint** - Creates a Stripe checkout session for subscription billing.
+        Legacy endpoint - prefer using payment-links for new implementations.
+      operationId: createCheckoutSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tenantId
+                - successUrl
+                - cancelUrl
+              properties:
+                tenantId:
+                  type: string
+                successUrl:
+                  type: string
+                  format: uri
+                cancelUrl:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Checkout session created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                  url:
+                    type: string
+                    format: uri
+
+  # Microsoft Graph Copilot Integration
+  /copilot/usage/summary:
+    get:
+      tags:
+        - Microsoft Graph
+      summary: Get Copilot usage summary from Microsoft Graph Reports API
+      description: |
+        Official Microsoft Graph Reports API integration for Copilot usage metrics.
+        Requires AiEnterpriseInteraction.Read.All and Reports.Read.All permissions.
+      operationId: getCopilotUsageSummary
+      security:
+        - FunctionKey: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [D7, D30, D90, D180]
+            default: D7
+          example: "D7"
+      responses:
+        '200':
+          description: Usage summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CopilotUsageSummary'
+        '401':
+          description: Unauthorized - missing Function key
+        '403':
+          description: Insufficient Microsoft Graph permissions
+
+  /copilot/users/count:
+    get:
+      tags:
+        - Microsoft Graph
+      summary: Get Copilot user count from Microsoft Graph Reports API
+      description: |
+        Official Microsoft Graph Reports API for Copilot user count metrics.
+        Requires Reports.Read.All permission.
+      operationId: getCopilotUserCount
+      security:
+        - FunctionKey: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [D7, D30, D90, D180]
+            default: D7
+      responses:
+        '200':
+          description: User count retrieved successfully
+        '401':
+          description: Unauthorized - missing Function key
+
+  # Health & Monitoring
+  /health:
+    get:
+      tags:
+        - Health & Monitoring
+      summary: Comprehensive health check
+      description: Basic health check endpoint for monitoring system availability
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Function App is running"
+
+  /health/live:
+    get:
+      tags:
+        - Health & Monitoring
+      summary: Liveness probe
+      description: Kubernetes-style liveness probe for container orchestration
+      operationId: healthCheckLive
+      responses:
+        '200':
+          description: Service is alive
+
+  /health/ready:
+    get:
+      tags:
+        - Health & Monitoring
+      summary: Readiness probe
+      description: Kubernetes-style readiness probe checking dependencies
+      operationId: healthCheckReady
+      responses:
+        '200':
+          description: Service is ready
+
+  /admin/servicebus/health:
+    get:
+      tags:
+        - Health & Monitoring
+      summary: Service Bus health status
+      description: Detailed Service Bus queue health and metrics
+      operationId: getServiceBusHealth
+      security:
+        - FunctionKey: []
+      responses:
+        '200':
+          description: Service Bus health retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceBusHealth'
+        '401':
+          description: Unauthorized - missing Function key
+
+  # Admin Functions
+  /tenant/users:
+    get:
+      tags:
+        - Admin Functions
+      summary: List tenant users from Microsoft Graph
+      description: |
+        Retrieves user list from Microsoft Graph API with filtering and pagination.
+        Requires User.Read.All permission and Function key authentication.
+      operationId: listTenantUsers
+      security:
+        - FunctionKey: []
+      parameters:
+        - name: top
+          in: query
+          schema:
+            type: integer
+            maximum: 200
+            default: 50
+        - name: filter
+          in: query
+          schema:
+            type: string
+          description: Filter by display name or email
+        - name: userType
+          in: query
+          schema:
+            type: string
+            enum: [guest, member]
+          description: Filter by user type
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TenantUser'
+                  totalCount:
+                    type: integer
+                  hasMore:
+                    type: boolean
+        '401':
+          description: Unauthorized - missing Function key
+
+  /stats/adminstats:
+    get:
+      tags:
+        - Admin Functions
+      summary: Get administrative statistics
+      description: Retrieves comprehensive administrative statistics for tenant
+      operationId: getAdminStats
+      parameters:
+        - name: tenantId
+          in: query
+          schema:
+            type: string
+            default: "default-tenant"
+      responses:
+        '200':
+          description: Admin statistics retrieved successfully

@@ -1,0 +1,55 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName=YOUR_STORAGE_ACCOUNT;AccountKey=YOUR_STORAGE_KEY;",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "GRAPH_TENANT_ID": "YOUR_AZURE_TENANT_ID",
+    "GRAPH_CLIENT_ID": "YOUR_AZURE_CLIENT_ID",
+    "GRAPH_CLIENT_SECRET": "YOUR_AZURE_CLIENT_SECRET",
+    "COSMOS_DB_CONNECTION_STRING": "AccountEndpoint=https://YOUR_COSMOS_ACCOUNT.documents.azure.com:443/;AccountKey=YOUR_COSMOS_KEY;",
+    "StripeSecretKey": "your_stripe_secret_key",
+    "StripePriceId": "price_YOUR_STRIPE_PRICE_ID",
+    "SCOPE": "api://YOUR_AZURE_CLIENT_ID/user_impersonation",
+    "CORS_ALLOWED_ORIGIN": "http://localhost:3001",
+    "STRIPE_SECRET_KEY": "your_stripe_secret_key",
+    "STRIPE_WEBHOOK_SECRET": "your_stripe_webhook_secret",
+    "STRIPE_PRICE_ID": "price_YOUR_STRIPE_PRICE_ID",
+    "AZURE_STORAGE_ACCOUNT_NAME": "YOUR_STORAGE_ACCOUNT_NAME",
+    "AZURE_STORAGE_CONTAINER_NAME": "exports",
+    "AZURE_TENANT_ID": "YOUR_AZURE_TENANT_ID",
+    "AZURE_CLIENT_ID": "YOUR_AZURE_CLIENT_ID",
+    "AZURE_CLIENT_SECRET": "YOUR_AZURE_CLIENT_SECRET",
+    "ServiceBusConnection": "Endpoint=sb://YOUR_SERVICE_BUS.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=YOUR_SERVICE_BUS_KEY",
+    
+    "_comment_features": "Feature flags for gradual enablement",
+    "Features:B2BInvitation:Enabled": "true",
+    "Features:UsageMetrics:Enabled": "true",
+    "Features:ChatSearch:Enabled": "true",
+    "Features:SeatManagement:Enabled": "true",
+    "Features:AuditLogging:Enabled": "true",
+    
+    "_comment_monitoring": "Advanced monitoring - disabled by default",
+    "Features:ServiceBusMonitoring:Enabled": "false",
+    "Features:ServiceBusMonitoring:UserThreshold": "50",
+    "Features:DeadLetterProcessing:Enabled": "false",
+    "Features:AdvancedTelemetry:Enabled": "false",
+    "Features:AdvancedTelemetry:UserThreshold": "100",
+    
+    "_comment_premium": "Premium features - disabled by default",
+    "Features:EnterpriseReporting:Enabled": "false",
+    "Features:EnterpriseReporting:UserThreshold": "250",
+    "Features:ComplianceChecking:Enabled": "false",
+    "Features:DataRetention:Enabled": "false",
+    "Features:AdvancedAnalytics:Enabled": "false"
+    }, 
+  "Host": {
+    "LocalHttpPort": 7071,
+    "CORS": "*"
+  },
+  "TrustedDomains": {
+    "Domains": [
+      "your-domain.com",
+      "localhost"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "type": "stdio",
+  "command": "/path/to/your/vaults-mcp/venv/bin/python",
+  "args": ["-m", "src.server"],
+  "cwd": "/path/to/your/vaults-mcp",
+  "env": {
+    "_comment_vaults": "=== Vaults Configuration ===",
+    "VAULTS_BASE_URL": "https://your-function-app.azurewebsites.net",
+    "VAULTS_FUNCTION_KEY": "YOUR_FUNCTION_APP_KEY",
+
+    "VAULTS_LOG_LEVEL": "INFO",
+    
+    "_comment_stripe": "=== Stripe Configuration (EDIT THESE VALUES) ===",
+    "STRIPE_SECRET_KEY": "your_stripe_secret_key",
+    "STRIPE_WEBHOOK_SECRET": "your_stripe_webhook_secret",
+    "STRIPE_PER_SEAT_PRICE_ID": "price_YOUR_STRIPE_PRICE_ID",
+    "DEFAULT_SEAT_COUNT": "5",
+    
+    "_comment_optional": "=== Optional Stripe Configuration ===",
+    "STRIPE_TIMEOUT": "30",
+    "STRIPE_MAX_RETRIES": "3"
+  }
+}

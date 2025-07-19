@@ -1,0 +1,697 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Vaults API",
+    "description": "Enterprise Microsoft 365 Copilot governance and auditing platform",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Vaults Support",
+      "email": "support@vaults.com",
+      "url": "https://docs.vaults.com"
+    },
+    "license": {
+      "name": "Proprietary",
+      "url": "https://vaults.com/license"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://apim-vaults-prod.azure-api.net/api/v1",
+      "description": "Production API Gateway"
+    },
+    {
+      "url": "https://apim-vaults-staging.azure-api.net/api/v1", 
+      "description": "Staging API Gateway"
+    }
+  ],
+  "security": [
+    {
+      "azure_ad_oauth": ["Vaults.ReadUsage"]
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check endpoint",
+        "description": "Returns the health status of the Vaults platform",
+        "operationId": "getHealth",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Function App is running"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service is unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/adminstats": {
+      "get": {
+        "tags": ["Administration"],
+        "summary": "Get administrative statistics",
+        "description": "Returns comprehensive administrative statistics for a tenant",
+        "operationId": "getAdminStats",
+        "security": [
+          {
+            "azure_ad_oauth": ["Vaults.ReadUsage"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "query",
+            "description": "Tenant ID (defaults to current user's tenant)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Administrative statistics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminStats"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/metrics/usage": {
+      "get": {
+        "tags": ["Metrics"],
+        "summary": "Get usage metrics",
+        "description": "Returns detailed usage metrics for a tenant",
+        "operationId": "getUsageMetrics", 
+        "security": [
+          {
+            "azure_ad_oauth": ["Vaults.ReadUsage"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "query",
+            "description": "Tenant ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date for metrics (ISO 8601 format)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date for metrics (ISO 8601 format)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage metrics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageMetrics"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/copilot/usage/summary": {
+      "get": {
+        "tags": ["Copilot"],
+        "summary": "Get Copilot usage summary",
+        "description": "Returns official Microsoft Graph Copilot usage summary",
+        "operationId": "getCopilotUsageSummary",
+        "security": [
+          {
+            "azure_ad_oauth": ["Vaults.ReadUsage"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time period for summary (D7, D30, D90, D180)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["D7", "D30", "D90", "D180"],
+              "default": "D7"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Copilot usage summary retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopilotUsageSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/copilot/security/alerts": {
+      "get": {
+        "tags": ["Security"],
+        "summary": "Get security alerts",
+        "description": "Returns security alerts from Microsoft Graph Security API",
+        "operationId": "getSecurityAlerts",
+        "security": [
+          {
+            "azure_ad_oauth": ["Vaults.ReadSecurity"]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Security alerts retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityAlerts"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/tenant/users": {
+      "get": {
+        "tags": ["User Management"],
+        "summary": "List tenant users",
+        "description": "Returns list of users in the tenant from Microsoft Graph",
+        "operationId": "listTenantUsers",
+        "security": [
+          {
+            "azure_ad_oauth": ["Vaults.ManageUsers"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "top",
+            "in": "query",
+            "description": "Number of users to return (max 200)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "Filter by display name or email",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant users retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantUsers"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          }
+        }
+      }
+    },
+    "/stripe/seats/{tenantId}": {
+      "get": {
+        "tags": ["Billing"],
+        "summary": "Get seat status",
+        "description": "Returns current seat allocation and usage for a tenant",
+        "operationId": "getSeatStatus",
+        "security": [
+          {
+            "azure_ad_oauth": ["Vaults.ReadBilling"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "description": "Tenant ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Seat status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeatStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "azure_ad_oauth": {
+        "type": "oauth2",
+        "description": "Azure Active Directory OAuth2 authentication",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token",
+            "scopes": {
+              "Vaults.ReadUsage": "Read usage metrics and analytics",
+              "Vaults.ReadSecurity": "Read security alerts and risk data",
+              "Vaults.ManageUsers": "Manage tenant users and policies",
+              "Vaults.ReadBilling": "Read billing and seat information",
+              "Vaults.Admin": "Full administrative access"
+            }
+          },
+          "implicit": {
+            "authorizationUrl": "https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/authorize",
+            "scopes": {
+              "Vaults.ReadUsage": "Read usage metrics and analytics",
+              "Vaults.ReadSecurity": "Read security alerts and risk data",
+              "Vaults.ManageUsers": "Manage tenant users and policies",
+              "Vaults.ReadBilling": "Read billing and seat information",
+              "Vaults.Admin": "Full administrative access"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "AdminStats": {
+        "type": "object",
+        "properties": {
+          "TenantId": {
+            "type": "string",
+            "description": "Tenant identifier"
+          },
+          "TotalUsers": {
+            "type": "integer",
+            "description": "Total number of users"
+          },
+          "ActiveUsers": {
+            "type": "integer",
+            "description": "Number of active users"
+          },
+          "TotalPolicies": {
+            "type": "integer",
+            "description": "Total number of policies"
+          },
+          "ActivePolicies": {
+            "type": "integer",
+            "description": "Number of active policies"
+          },
+          "HighRiskPolicies": {
+            "type": "integer",
+            "description": "Number of high-risk policies"
+          },
+          "TotalInteractions": {
+            "type": "integer",
+            "description": "Total Copilot interactions"
+          },
+          "InteractionsWithPii": {
+            "type": "integer",
+            "description": "Interactions containing PII"
+          },
+          "PolicyViolations": {
+            "type": "integer",
+            "description": "Number of policy violations"
+          },
+          "LastSyncTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last synchronization time"
+          },
+          "ProcessedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When statistics were processed"
+          }
+        },
+        "required": ["TenantId", "TotalUsers", "ActiveUsers", "ProcessedAt"]
+      },
+      "UsageMetrics": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "end": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "seats": {
+            "type": "object",
+            "properties": {
+              "active": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              },
+              "utilizationRate": {
+                "type": "number"
+              }
+            }
+          },
+          "interactions": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "dailyAverage": {
+                "type": "number"
+              },
+              "growthRate": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "CopilotUsageSummary": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "reportDate": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "userPrincipalName": {
+                  "type": "string"
+                },
+                "lastActivityDate": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "copilotUsageCount": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "SecurityAlerts": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": ["low", "medium", "high", "critical"]
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "createdDateTime": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      },
+      "TenantUsers": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "userType": {
+                  "type": "string"
+                },
+                "accountEnabled": {
+                  "type": "boolean"
+                },
+                "createdDateTime": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "totalCount": {
+            "type": "integer"
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SeatStatus": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "seatsAllocated": {
+            "type": "integer"
+          },
+          "seatsUsed": {
+            "type": "integer"
+          },
+          "seatsAvailable": {
+            "type": "integer"
+          },
+          "utilizationPercentage": {
+            "type": "number"
+          },
+          "subscriptionStatus": {
+            "type": "string",
+            "enum": ["active", "trialing", "past_due", "canceled", "unpaid"]
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              },
+              "requestId": {
+                "type": "string"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": ["code", "message"]
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequestError": {
+        "description": "Bad request - invalid parameters",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "UnauthorizedError": {
+        "description": "Unauthorized - valid JWT token required",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "ForbiddenError": {
+        "description": "Forbidden - insufficient permissions",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFoundError": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-ms-paths": {},
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Health check and monitoring endpoints"
+    },
+    {
+      "name": "Administration",
+      "description": "Administrative functions and statistics"
+    },
+    {
+      "name": "Metrics", 
+      "description": "Usage metrics and analytics"
+    },
+    {
+      "name": "Copilot",
+      "description": "Microsoft Graph Copilot integration"
+    },
+    {
+      "name": "Security",
+      "description": "Security monitoring and alerts"
+    },
+    {
+      "name": "User Management",
+      "description": "Tenant user management"
+    },
+    {
+      "name": "Billing",
+      "description": "Billing and subscription management"
+    }
+  ]
+}
