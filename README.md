@@ -13,7 +13,7 @@
 
 ## Overview
 
-Vaults is a comprehensive governance platform that addresses Microsoft's acknowledged gaps in Copilot oversight. Built for enterprise administrators, CISOs, and compliance teams to monitor, govern, and audit Microsoft 365 Copilot usage across their organisation.
+Vaults is a governance platform that addresses Microsoft's acknowledged gaps in Copilot oversight. Built for enterprise administrators, CISOs, and compliance teams to monitor, govern, and audit Microsoft 365 Copilot usage across their organisation.
 
 ### Key Features
 
@@ -321,7 +321,7 @@ We welcome contributions to the Vaults platform. Please see our [Contributing Gu
 
 ### Reporting Security Issues
 
-Please report security vulnerabilities to security@vaults.com. Do not create public GitHub issues for security problems.
+Please report security vulnerabilities to project@tumunu.com. Do not create public GitHub issues for security problems.
 
 ### Security Features
 
