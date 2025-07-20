@@ -294,8 +294,6 @@ Comprehensive documentation is available in the [`docs/`](docs/) directory:
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - Complete API reference
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment instructions
 - **[Azure Setup Guide](docs/AZURE-SETUP-GUIDE.md)** - Azure AD and infrastructure setup
-- **[Testing Guide](docs/TESTING-GUIDE.md)** - Testing strategies and procedures
-- **[MCP Integration](docs/CLAUDE_MCP_SERVER_IMPLEMENTATION.md)** - Claude Code integration
 
 ## Contributing
 
@@ -367,4 +365,4 @@ For enterprise customers requiring dedicated support, please contact [Tumunu](ma
 
 **Built for enterprise Microsoft 365 Copilot governance by Tumunu**
 
-Tumunu develops practical security and digital forensics tools that demonstrate real capability. For questions, feedback, or support, please visit our [GitHub Discussions](https://github.com/your-org/vaults/discussions) or contact [Tumunu](mailto:project@tumunu.com).
+Tumunu develops practical security and digital forensics tools that demonstrate real capability. For questions, feedback, or support, please visit our [GitHub Discussions](https://github.com/tumunu/vaults/discussions) or contact [Tumunu](mailto:project@tumunu.com).
