@@ -130,3 +130,6 @@ temp/
 
 # Azure Functions
 local.settings.json
+docs/AZURE-SETUP-GUIDE.md
+docs/API_DOCUMENTATION.md
+.gitignore
